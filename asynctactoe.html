@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <style>
+            /* general layout */
+            body {
+                background-color: bisque;
+                font-family:sans-serif;
+            }
+            h2 {
+                font-size: 1.17rem;
+                text-decoration: underline;
+                
+            }
+            header{
+                margin: 3vh auto;
+            }
+            .flexContainer {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .columnal {
+                flex-direction:column;
+            }
+            .strong {
+                font-weight: bold;
+            }
+            .gameButton{
+                margin: 1rem;
+                padding: 0.3rem;
+                min-width: 8rem;
+                border: solid 5px;
+                border-radius: 5px;
+                background-color: bisque;
+            }
+            .gameButton:hover {
+                background-color: burlywood;
+            }
+            .gameButton:active {
+                background-color: black;
+                color: bisque;
+                border-color: black;
+            }
+            
+            
+            /* how to play popup */
+            dialog {
+                width: 40vw;
+            }
+            dialog button{
+                margin-left: auto;
+                margin-right: 0;
+                display: block;
+            }
+                
+            
+            /* game board*/
+            #board {
+                text-align: center;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(3, 1fr);
+                grid-gap: 5px;
+                background-color: black;
+                border: solid 5px;
+                border-radius: 5px;
+            }
+            .tile {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 8rem;
+                height: 8rem;
+                font-size: 5rem;
+                overflow: clip;
+                text-overflow: clip;
+                background-color: bisque;
+            }
+            .tile.free:hover {
+                cursor: pointer;
+                background-color:burlywood;
+            }
+            .tile.free:active {
+                background-color: black;
+                color: bisque;
+            }
+            
+        </style>
+        <script type="module">
+            // ==========Declarations and Event Listeners==========
+            const howToDialog = document.querySelector("dialog#help");
+            const invalidMoveDialog = document.querySelector("dialog#invalid");
+            const closeButtons = document.querySelectorAll("dialog button.close");
+            const openHelpButton = document.querySelector(".gameButton:not(.strong)");
+            const submitButton = document.querySelector(".gameButton.strong");
+            const player1 = "❌";
+            const player2 = "⭕";
+            const tileStates = {
+                "":1,
+                "❌":2,
+                "⭕":4
+                };
+            const turnFlags = {
+                "X":"❌",
+                "O":"⭕",
+                "V":200
+            }
+            const winlines = [
+                [0,1,2],
+                [0,3,6],
+                [0,4,8],
+                [1,4,7],
+                [2,4,6],
+                [2,5,8],
+                [3,4,5],
+                [6,7,8]
+            ];
+            let board = Array(9);
+            let params = new URLSearchParams(document.location.search);
+            let game = params.get("data");
+            
+            closeButtons.forEach((button)=> button.addEventListener("click",() => button.parentElement.close()));
+            openHelpButton.addEventListener("click", () => howToDialog.showModal() );
+            submitButton.addEventListener("click", () => submit() );
+            
+            // ==========Functions==========
+            
+            // New game
+            function startGame(){
+                howToDialog.showModal(); // Open help dialog by default on first turn
+                let player = player1;
+                let tiles = document.querySelectorAll(".tile.free");
+                tiles.forEach((tile)=> {
+                    tile.addEventListener("click", (clickedTileEvent) => markTile(clickedTileEvent.target,player));
+                });
+            }
+            
+            // Continue game
+            function continueGame(data){console.log("cont.")}
+            
+            // Submit
+            function submit(){
+                let currentSelected = document.querySelector('div[data-selected="1"]');
+                let id = -1;
+                if (currentSelected){
+                    id = Number(currentSelected.id);
+                }
+                id >= 0 ? endMove() : invalidMoveDialog.showModal();
+            }
+            
+            // End move
+            function endMove(){
+                document.querySelectorAll(".tile").forEach((tile,currentIndex)=> board[currentIndex]=tileStates[tile.innerHTML] );
+                isWin();//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            }
+            
+            // Determine if the game is won
+            function isWin(){
+                let boardMod = board.map((tileVal)=> tileVal % 4 );
+                for (line of winlines){
+                    lineSum = board[line[0]]+board[line[1]]+board[line[2]];
+                    if (lineSum % 6 == 0){
+                        return true;
+                    }
+                }
+                return false;
+            }
+            
+            // Tile click handler
+            function markTile(tile,player){
+                let currentSelected = document.querySelector('div[data-selected="1"]');
+                if (currentSelected){
+                    currentSelected.innerHTML = "";
+                    delete(currentSelected.dataset.selected);
+                }
+                tile.innerHTML = player;
+                tile.dataset.selected = 1;
+            }
+            
+            // Validate the data param
+            function validateGame(data){
+                const regex = /^[XVO][0-9a-fA-F]{7,8}[0-9]$/;
+                return regex.test(data);
+            }
+            
+            
+            // ==========Main=========
+
+            // Continue game if valid datastring exists
+            if (game){
+                validateGame(game) ? continueGame(game) : startGame();
+            } else {
+                startGame();
+            }
+            
+
+        </script>
+        <meta charset="utf-8" />
+        <title>Async-Tac-Toe</title>
+    </head>
+    <body>
+        <dialog id="help">
+            <h1>Async-Tac-Toe</h1>
+            <h2>HOW TO PLAY</h2>
+            <p>It's Tic-Tac-Toe. I'm not explaining the rules to Tic-Tac-Toe.</p>
+            <p><em>However...</em> the multiplayer aspect works as thus:</p>
+            <ol>
+                <li>Select a square</li>
+                <li>Click "Submit" to lock in your choice</li>
+                <li>Copy the URL provided and send it to your opponent!</li>
+            </ol>
+            <p>Get it? Got it. Good!</p>
+            <button class="close">Close</button>
+        </dialog>
+        
+        <dialog id="invalid">
+            <p>You haven't selected a tile!</p>
+            <button class="close">Close</button>
+        </dialog>
+        
+        <dialog id="share">
+            <!-- TODO -->
+            <button class="close">Close</button>
+        </dialog>
+
+        <div class="flexContainer columnal">
+            <header>
+                <h1>Async-Tac-Toe</h1>
+            </header>
+            <section id="board">
+                <div class="tile free" id="0"></div>
+                <div class="tile free" id="1"></div>
+                <div class="tile free" id="2"></div>
+                <div class="tile free" id="3"></div>
+                <div class="tile free" id="4"></div>
+                <div class="tile free" id="5"></div>
+                <div class="tile free" id="6"></div>
+                <div class="tile free" id="7"></div>
+                <div class="tile free" id="8"></div>
+            </section>
+        </div>
+        <div class="flexContainer">
+            <button class="gameButton">How to play</button>
+            <button class="gameButton strong">Submit</button>
+        </div>
+    </body>
+</html>
