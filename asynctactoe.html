@@ -42,9 +42,6 @@
                 color: bisque;
                 border-color: black;
             }
-            
-            
-            /* how to play popup */
             dialog {
                 width: 40vw;
             }
@@ -101,11 +98,7 @@
                 "❌":2,
                 "⭕":4
                 };
-            const turnFlags = {
-                "X":"❌",
-                "O":"⭕",
-                "V":200
-            }
+            const victoryFlag = "V";
             const winlines = [
                 [0,1,2],
                 [0,3,6],
@@ -117,6 +110,7 @@
                 [6,7,8]
             ];
             let board = Array(9);
+            let turnCount = 1;
             let params = new URLSearchParams(document.location.search);
             let game = params.get("data");
             
@@ -125,7 +119,41 @@
             submitButton.addEventListener("click", () => submit() );
             
             // ==========Functions==========
+                      
+            // Get currently selected tile
+            function getSelected(){
+                return document.querySelector('div[data-selected="1"]');
+            }
             
+            // Convert between turn flags and play symbols
+            function convertFlag(expr){
+                switch(expr){
+                    case "X":
+                        return "❌";
+                    case "O":
+                        return "⭕";
+                    case "❌":
+                        return "X";
+                    case "⭕":
+                        return "O";
+                    case "V":
+                        return 200;
+                    default:
+                        return: "";
+            }
+            
+            // Generate URL string
+            function generateDataURI(turnFlag){
+                boardSting = Number(a.join("")).toString(16);
+                return turnFlag + boardSting + turnCount;
+                
+            }
+            
+            // Increment turn flag
+            function turnCounterIncrease(){
+                turnCount += 1;
+            }
+
             // New game
             function startGame(){
                 howToDialog.showModal(); // Open help dialog by default on first turn
@@ -141,7 +169,7 @@
             
             // Submit
             function submit(){
-                let currentSelected = document.querySelector('div[data-selected="1"]');
+                let currentSelected = getSelected();
                 let id = -1;
                 if (currentSelected){
                     id = Number(currentSelected.id);
@@ -151,15 +179,23 @@
             
             // End move
             function endMove(){
+                turnCounterIncrease();
+                let turnFlag = convertFlag(getSelected().innerHTML);
                 document.querySelectorAll(".tile").forEach((tile,currentIndex)=> board[currentIndex]=tileStates[tile.innerHTML] );
-                isWin();//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                if (isWin()){
+                    turnFlag = victoryFlag;
+                    alert("🎉 Congratulations! You win! 🎉");
+                }
+                datastring = generateDataURI(turnFlag);
+                shareURL = location.protocol + "//" + location.host + location.pathname + "?data=" + datastring;
+                ///////////////////////////////////
             }
             
             // Determine if the game is won
             function isWin(){
                 let boardMod = board.map((tileVal)=> tileVal % 4 );
                 for (line of winlines){
-                    lineSum = board[line[0]]+board[line[1]]+board[line[2]];
+                    lineSum = boardMod[line[0]]+boardMod[line[1]]+boardMod[line[2]];
                     if (lineSum % 6 == 0){
                         return true;
                     }
@@ -169,7 +205,7 @@
             
             // Tile click handler
             function markTile(tile,player){
-                let currentSelected = document.querySelector('div[data-selected="1"]');
+                let currentSelected = getSelected();
                 if (currentSelected){
                     currentSelected.innerHTML = "";
                     delete(currentSelected.dataset.selected);
@@ -180,7 +216,7 @@
             
             // Validate the data param
             function validateGame(data){
-                const regex = /^[XVO][0-9a-fA-F]{7,8}[0-9]$/;
+                const regex = /^[XVO][0-9a-fA-F]{7,8}[1-9]$/;
                 return regex.test(data);
             }
             
