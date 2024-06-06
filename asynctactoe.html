@@ -10,7 +10,7 @@
             h2 {
                 font-size: 1.17rem;
                 text-decoration: underline;
-                
+
             }
             header{
                 margin: 3vh auto;
@@ -50,8 +50,8 @@
                 margin-right: 0;
                 display: block;
             }
-                
-            
+
+
             /* game board*/
             #board {
                 text-align: center;
@@ -82,7 +82,7 @@
                 background-color: black;
                 color: bisque;
             }
-            
+
         </style>
         <script type="module">
             // ==========Declarations and Event Listeners==========
@@ -113,18 +113,18 @@
             let turnCount = 1;
             let params = new URLSearchParams(document.location.search);
             let game = params.get("data");
-            
+
             closeButtons.forEach((button)=> button.addEventListener("click",() => button.parentElement.close()));
             openHelpButton.addEventListener("click", () => howToDialog.showModal() );
             submitButton.addEventListener("click", () => submit() );
-            
+
             // ==========Functions==========
-                      
+
             // Get currently selected tile
             function getSelected(){
                 return document.querySelector('div[data-selected="1"]');
             }
-            
+
             // Convert between turn flags and play symbols
             function convertFlag(expr){
                 switch(expr){
@@ -141,14 +141,14 @@
                     default:
                         return: "";
             }
-            
+
             // Generate URL string
             function generateDataURI(turnFlag){
                 boardSting = Number(a.join("")).toString(16);
                 return turnFlag + boardSting + turnCount;
-                
+
             }
-            
+
             // Increment turn flag
             function turnCounterIncrease(){
                 turnCount += 1;
@@ -163,10 +163,10 @@
                     tile.addEventListener("click", (clickedTileEvent) => markTile(clickedTileEvent.target,player));
                 });
             }
-            
+
             // Continue game
             function continueGame(data){console.log("cont.")}
-            
+
             // Submit
             function submit(){
                 let currentSelected = getSelected();
@@ -176,7 +176,7 @@
                 }
                 id >= 0 ? endMove() : invalidMoveDialog.showModal();
             }
-            
+
             // End move
             function endMove(){
                 turnCounterIncrease();
@@ -188,9 +188,9 @@
                 }
                 datastring = generateDataURI(turnFlag);
                 shareURL = location.protocol + "//" + location.host + location.pathname + "?data=" + datastring;
-                ///////////////////////////////////
+                // TODO: Show Share modal
             }
-            
+
             // Determine if the game is won
             function isWin(){
                 let boardMod = board.map((tileVal)=> tileVal % 4 );
@@ -202,7 +202,7 @@
                 }
                 return false;
             }
-            
+
             // Tile click handler
             function markTile(tile,player){
                 let currentSelected = getSelected();
@@ -213,14 +213,14 @@
                 tile.innerHTML = player;
                 tile.dataset.selected = 1;
             }
-            
+
             // Validate the data param
             function validateGame(data){
                 const regex = /^[XVO][0-9a-fA-F]{7,8}[1-9]$/;
                 return regex.test(data);
             }
-            
-            
+
+
             // ==========Main=========
 
             // Continue game if valid datastring exists
@@ -229,7 +229,7 @@
             } else {
                 startGame();
             }
-            
+
 
         </script>
         <meta charset="utf-8" />
@@ -249,14 +249,14 @@
             <p>Get it? Got it. Good!</p>
             <button class="close">Close</button>
         </dialog>
-        
+
         <dialog id="invalid">
             <p>You haven't selected a tile!</p>
             <button class="close">Close</button>
         </dialog>
-        
+
         <dialog id="share">
-            <!-- TODO -->
+            <!-- TODO: Share modal body -->
             <button class="close">Close</button>
         </dialog>
 
