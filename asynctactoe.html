@@ -45,7 +45,7 @@
             dialog {
                 width: 40vw;
             }
-            dialog button{
+            dialog button.close{
                 margin-left: auto;
                 margin-right: 0;
                 display: block;
@@ -139,13 +139,14 @@
                     case "V":
                         return 200;
                     default:
-                        return: "";
+                        return "";
+                    }
             }
 
             // Generate URL string
             function generateDataURI(turnFlag){
-                boardSting = Number(a.join("")).toString(16);
-                return turnFlag + boardSting + turnCount;
+                let boardString = Number(board.join("")).toString(16);
+                return turnFlag + boardString + turnCount;
 
             }
 
@@ -177,6 +178,18 @@
                 id >= 0 ? endMove() : invalidMoveDialog.showModal();
             }
 
+            // Determine if the game is won
+            function isWin(){
+                let boardMod = board.map((tileVal)=> tileVal % 4 );
+                for (let line of winlines){
+                    let lineSum = boardMod[line[0]]+boardMod[line[1]]+boardMod[line[2]];
+                    if (lineSum % 6 == 0){
+                        return true;
+                    }
+                }
+                return false;
+            }
+
             // End move
             function endMove(){
                 turnCounterIncrease();
@@ -186,21 +199,9 @@
                     turnFlag = victoryFlag;
                     alert("🎉 Congratulations! You win! 🎉");
                 }
-                datastring = generateDataURI(turnFlag);
-                shareURL = location.protocol + "//" + location.host + location.pathname + "?data=" + datastring;
+                let datastring = generateDataURI(turnFlag);
+                let shareURL = location.protocol + "//" + location.host + location.pathname + "?data=" + datastring;
                 // TODO: Show Share modal
-            }
-
-            // Determine if the game is won
-            function isWin(){
-                let boardMod = board.map((tileVal)=> tileVal % 4 );
-                for (line of winlines){
-                    lineSum = boardMod[line[0]]+boardMod[line[1]]+boardMod[line[2]];
-                    if (lineSum % 6 == 0){
-                        return true;
-                    }
-                }
-                return false;
             }
 
             // Tile click handler
