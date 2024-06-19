@@ -86,11 +86,18 @@
         </style>
         <script type="module">
             // ==========Declarations and Event Listeners==========
+
             const howToDialog = document.querySelector("dialog#help");
             const invalidMoveDialog = document.querySelector("dialog#invalid");
+            const shareDialog = document.querySelector("dialog#share");
+            const loseDialog = document.querySelector("dialog#loser");
+            const drawDialog = document.querySelector("dialog#draw");
             const closeButtons = document.querySelectorAll("dialog button.close");
+            const newButtons = document.querySelectorAll("dialog button.newGame");
             const openHelpButton = document.querySelector(".gameButton:not(.strong)");
             const submitButton = document.querySelector(".gameButton.strong");
+            const copyButton = document.querySelector("#copy");
+            const maxMoves = 9;
             const player1 = "❌";
             const player2 = "⭕";
             const tileStates = {
@@ -99,6 +106,7 @@
                 "⭕":4
                 };
             const victoryFlag = "V";
+            const drawFlag = "D";
             const winlines = [
                 [0,1,2],
                 [0,3,6],
@@ -115,8 +123,10 @@
             let game = params.get("data");
 
             closeButtons.forEach((button)=> button.addEventListener("click",() => button.parentElement.close()));
+            newButtons.forEach((button)=> button.addEventListener("click",() => window.location.replace(location.protocol + "//" + location.host + location.pathname)));
             openHelpButton.addEventListener("click", () => howToDialog.showModal() );
             submitButton.addEventListener("click", () => submit() );
+            copyButton.addEventListener("click", () => navigator.clipboard.writeText(document.querySelector("#nextTurnLink").value));
 
             // ==========Functions==========
 
@@ -129,19 +139,39 @@
             function convertFlag(expr){
                 switch(expr){
                     case "X":
-                        return "❌";
+                        return player1;
                     case "O":
-                        return "⭕";
-                    case "❌":
+                        return player2;
+                    case player1:
                         return "X";
-                    case "⭕":
+                    case player2:
                         return "O";
                     case "V":
                         return 200;
+                    case "D":
+                        return 205;
+                    case "1":
+                        return "";
+                    case "2":
+                        return player1;
+                    case "4":
+                        return player2;
                     default:
                         return "";
                     }
             }
+
+            // Get opposing turn flag
+            function getNextTurn(expr){
+                if (expr == "X") {
+                    return "O";
+                }
+                if (expr == "O"){
+                    return "X";
+                }
+                return "";
+            }
+
 
             // Generate URL string
             function generateDataURI(turnFlag){
@@ -155,6 +185,16 @@
                 turnCount += 1;
             }
 
+            // Returns true if max turns exceeded
+            function movesExceeded(){
+                return turnCount > maxMoves;
+            }
+
+            // Reset turn flag
+            function turnCounterReset(){
+                turnCount = 1;
+            }
+
             // New game
             function startGame(){
                 howToDialog.showModal(); // Open help dialog by default on first turn
@@ -166,14 +206,36 @@
             }
 
             // Continue game
-            function continueGame(data){console.log("cont.")}
+            function continueGame(data){
+                let turnFlag = convertFlag(data.slice(0,1));
+                let boardState = data.slice(1,-1);
+                turnCount = Number(data.slice(-1));
+                if (turnFlag == 200){
+                    loseDialog.showModal();
+                } else if (turnFlag == 205){
+                    drawDialog.showModal();
+                } else {
+                    let player = turnFlag;
+                    board = String(parseInt(boardState, 16)).split("");
+                    board.forEach((tile,index) => {
+                        let boardTile = document.querySelector("div#t"+String(index));
+                        let playPiece = convertFlag(tile);
+                        boardTile.innerHTML = playPiece;
+                        if (playPiece){
+                            boardTile.classList.remove("free");
+                        } else {
+                            boardTile.addEventListener("click", (clickedTileEvent) => markTile(clickedTileEvent.target,player));
+                        }
+                    })
+                }
+            }
 
             // Submit
             function submit(){
                 let currentSelected = getSelected();
                 let id = -1;
                 if (currentSelected){
-                    id = Number(currentSelected.id);
+                    id = Number(currentSelected.id.slice(1));
                 }
                 id >= 0 ? endMove() : invalidMoveDialog.showModal();
             }
@@ -192,16 +254,28 @@
 
             // End move
             function endMove(){
-                turnCounterIncrease();
                 let turnFlag = convertFlag(getSelected().innerHTML);
                 document.querySelectorAll(".tile").forEach((tile,currentIndex)=> board[currentIndex]=tileStates[tile.innerHTML] );
+                let nextTurn
+                let datastring
                 if (isWin()){
                     turnFlag = victoryFlag;
                     alert("🎉 Congratulations! You win! 🎉");
+                    datastring = generateDataURI(turnFlag);
+                } else if (movesExceeded()){
+                    turnFlag = drawFlag;
+                    alert("😐 Nobody won... 😐");
+                    turnCounterReset();
+                    datastring = generateDataURI(turnFlag);
+                } else {
+                    turnCounterIncrease();
+                    nextTurn = getNextTurn(turnFlag);
+                    datastring = generateDataURI(nextTurn);
                 }
-                let datastring = generateDataURI(turnFlag);
                 let shareURL = location.protocol + "//" + location.host + location.pathname + "?data=" + datastring;
-                // TODO: Show Share modal
+                let shareText = document.querySelector("#nextTurnLink");
+                shareText.value = shareURL;
+                shareDialog.showModal();
             }
 
             // Tile click handler
@@ -217,7 +291,7 @@
 
             // Validate the data param
             function validateGame(data){
-                const regex = /^[XVO][0-9a-fA-F]{7,8}[1-9]$/;
+                const regex = /^[XVOD][0-9a-fA-F]{7,8}[1-9]$/;
                 return regex.test(data);
             }
 
@@ -257,8 +331,24 @@
         </dialog>
 
         <dialog id="share">
-            <!-- TODO: Share modal body -->
+            <h1>Async-Tac-Toe</h1>
+            <h2>Share</h2>
+            <p>Share this link with your opponent: </p>
+            <input type="text" id="nextTurnLink" readonly /> <!-- This *was* given the id of "sharebox"...
+                                                                  except adblockers like to hide elements with the
+                                                                  word Share in their IDs! -->
+            <button id="copy">Copy</button>
             <button class="close">Close</button>
+        </dialog>
+
+        <dialog id="loser">
+            <h1>YOU LOST ☹️</h1>
+            <button class="newGame">New game?</button>
+        </dialog>
+
+        <dialog id="draw">
+            <h1>Nobody won... 😐</h1>
+            <button class="newGame">New game?</button>
         </dialog>
 
         <div class="flexContainer columnal">
@@ -266,15 +356,15 @@
                 <h1>Async-Tac-Toe</h1>
             </header>
             <section id="board">
-                <div class="tile free" id="0"></div>
-                <div class="tile free" id="1"></div>
-                <div class="tile free" id="2"></div>
-                <div class="tile free" id="3"></div>
-                <div class="tile free" id="4"></div>
-                <div class="tile free" id="5"></div>
-                <div class="tile free" id="6"></div>
-                <div class="tile free" id="7"></div>
-                <div class="tile free" id="8"></div>
+                <div class="tile free" id="t0"></div>
+                <div class="tile free" id="t1"></div>
+                <div class="tile free" id="t2"></div>
+                <div class="tile free" id="t3"></div>
+                <div class="tile free" id="t4"></div>
+                <div class="tile free" id="t5"></div>
+                <div class="tile free" id="t6"></div>
+                <div class="tile free" id="t7"></div>
+                <div class="tile free" id="t8"></div>
             </section>
         </div>
         <div class="flexContainer">
